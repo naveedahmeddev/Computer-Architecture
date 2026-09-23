@@ -3,8 +3,7 @@
 main:
     #Finding Sum of the numbers in the array using recursion
     
-    li x10, 0x1000  # a = base address                    
-    addi, sp, sp, -16   
+    li x10, 0x1000  # array base address                    
     li x18, 5
     li x19, 6
     li x20, 7
@@ -14,8 +13,12 @@ main:
     sw x20, 4(x10)
     sw x21, 0(x10)
 
-    addi x11, x0, 5  # x11 = n = 5  
+    addi x11, x0, 4  # x11 = n = 4
     jal x1, arraySum  # x10 = sum
+    addi x11, x10, 0
+    li x10, 1
+    ecall 
+    j exit
 
 arraySum:
     addi sp, sp, -16  # store in stack
@@ -40,3 +43,6 @@ done:
     lw x8, 8(x2)  # restore x8
     addi x2, x2, 16  # deallocate stack memory
     jalr x0, 0(x1)  # return
+
+
+exit:

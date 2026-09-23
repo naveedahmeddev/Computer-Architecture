@@ -2,8 +2,8 @@
 main:
     
     li x10, 0x1000  # a = base address       
-    li x11, 4 # len = 4              
-    addi, sp, sp, -16
+    li x11, 4 # len = 4     
+             
     li x18, 5
     li x19, 6
     li x20, 7
