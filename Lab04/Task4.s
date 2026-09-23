@@ -1,8 +1,20 @@
 
 .text
 main:
-    la x10, array  # x10 = base address of array
-    addi x11, x0, 5  # x11 = n = 5
+    #Finding Sum of the numbers in the array using recursion
+    
+    li x10, 0x1000  # a = base address                    
+    addi, sp, sp, -16   
+    li x18, 5
+    li x19, 6
+    li x20, 7
+    li x21, 3
+    sw x18, 12(x10)   # creating array in the memory
+    sw x19, 8(x10) 
+    sw x20, 4(x10)
+    sw x21, 0(x10)
+
+    addi x11, x0, 5  # x11 = n = 5  
     jal x1, arraySum  # x10 = sum
 
 arraySum:

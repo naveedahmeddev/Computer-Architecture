@@ -8,7 +8,7 @@ main:
     addi x11, x10, 0
     li x10, 1
     ecall          # printing the value for the Recursive version 
-    jal x1, factIterative
+    jal x1, fact
     addi x11, x10, 0
     li x10, 1
     ecall    # printing the value for Iterative version

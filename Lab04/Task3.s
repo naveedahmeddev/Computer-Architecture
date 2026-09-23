@@ -1,7 +1,17 @@
 .text
 main:
+    
     li x10, 0x1000  # a = base address       
     li x11, 4 # len = 4              
+    addi, sp, sp, -16
+    li x18, 5
+    li x19, 6
+    li x20, 7
+    li x21, 3
+    sw x18, 12(x10)   # creating array in the memory
+    sw x19, 8(x10) 
+    sw x20, 4(x10)
+    sw x21, 0(x10)
 
     beq x10, x0, exit # if (a == NULL) return
     beq x11, x0, exit  # if (len == 0)  return
