@@ -8,7 +8,7 @@
 module top_alu_system #(
     parameter [31:0] OPERAND_A = 32'h10101010,
     parameter [31:0] OPERAND_B = 32'h01010101,
-    parameter integer STEP_CYCLES = 200_000_000
+    parameter STEP_CYCLES = 200_000_000
 )(
     input wire clk,
     input wire pbin,

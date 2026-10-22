@@ -22,16 +22,13 @@ module ALU_tb;
     wire Zero;
 
     reg [31:0] op_name = "----";
+    reg [31:0] exp_result = 32'd0;
+    reg exp_zero = 1'b0;
 
-    integer pass_count = 0;
-    integer fail_count = 0;
-    integer seed = 2026;
-    integer i;
-
-    reg [3:0] rand_ctrl;
-    reg [31:0] rand_a;
-    reg [31:0] rand_b;
-    reg [31:0] rand_expected;
+    reg [31:0] pass_count = 0;
+    reg [31:0] fail_count = 0;
+    reg [31:0] seed = 2026;
+    reg [5:0] i;
 
     ALU dut (
         .A(A),
@@ -41,67 +38,6 @@ module ALU_tb;
         .Zero(Zero)
     );
 
-    task check;
-        input [31:0] name;
-        input [3:0] ctrl;
-        input [31:0] a;
-        input [31:0] b;
-        input [31:0] exp_result;
-        input exp_zero;
-        begin
-            op_name = name;
-            ALUControl = ctrl;
-            A = a;
-            B = b;
-            #10;
-            if (ALUResult === exp_result && Zero === exp_zero) begin
-                pass_count = pass_count + 1;
-                $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b",
-                         name, ctrl, a, b, ALUResult, Zero);
-            end
-            else begin
-                fail_count = fail_count + 1;
-                $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)",
-                         name, ctrl, a, b, ALUResult, Zero, exp_result, exp_zero);
-            end
-        end
-    endtask
-
-    // Reference model uses plain operators, not the ALU's A + ~B + 1 structure
-    function [31:0] model;
-        input [3:0] ctrl;
-        input [31:0] a;
-        input [31:0] b;
-        begin
-            case (ctrl)
-                ALU_AND : model = a & b;
-                ALU_OR : model = a | b;
-                ALU_ADD : model = a + b;
-                ALU_XOR : model = a ^ b;
-                ALU_SLL : model = a << b[4:0];
-                ALU_SRL : model = a >> b[4:0];
-                ALU_SUB : model = a - b;
-                default : model = 32'd0;
-            endcase
-        end
-    endfunction
-
-    function [31:0] op_label;
-        input [3:0] ctrl;
-        begin
-            case (ctrl)
-                ALU_AND : op_label = "AND ";
-                ALU_OR : op_label = "OR  ";
-                ALU_ADD : op_label = "ADD ";
-                ALU_XOR : op_label = "XOR ";
-                ALU_SLL : op_label = "SLL ";
-                ALU_SRL : op_label = "SRL ";
-                ALU_SUB : op_label = "SUB ";
-                default : op_label = "----";
-            endcase
-        end
-    endfunction
-
     initial begin
         $dumpfile("ALU_tb.vcd");
         $dumpvars(0, ALU_tb);
@@ -109,78 +45,219 @@ module ALU_tb;
         #10;
 
         // the lab's fixed operands
-        check("ADD ", ALU_ADD, 32'h10101010, 32'h01010101, 32'h11111111, 1'b0);
-        check("SUB ", ALU_SUB, 32'h10101010, 32'h01010101, 32'h0F0F0F0F, 1'b0);
-        check("SLL ", ALU_SLL, 32'h10101010, 32'h01010101, 32'h20202020, 1'b0);
-        check("SRL ", ALU_SRL, 32'h10101010, 32'h01010101, 32'h08080808, 1'b0);
-        check("AND ", ALU_AND, 32'h10101010, 32'h01010101, 32'h00000000, 1'b1);
-        check("OR  ", ALU_OR , 32'h10101010, 32'h01010101, 32'h11111111, 1'b0);
-        check("XOR ", ALU_XOR, 32'h10101010, 32'h01010101, 32'h11111111, 1'b0);
-        check("BEQ ", ALU_SUB, 32'h10101010, 32'h01010101, 32'h0F0F0F0F, 1'b0);
-        check("BEQ ", ALU_SUB, 32'h10101010, 32'h10101010, 32'h00000000, 1'b1);
+        op_name = "ADD "; ALUControl = ALU_ADD; A = 32'h10101010; B = 32'h01010101; exp_result = 32'h11111111; exp_zero = 1'b0;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "SUB "; ALUControl = ALU_SUB; A = 32'h10101010; B = 32'h01010101; exp_result = 32'h0F0F0F0F; exp_zero = 1'b0;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "SLL "; ALUControl = ALU_SLL; A = 32'h10101010; B = 32'h01010101; exp_result = 32'h20202020; exp_zero = 1'b0;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "SRL "; ALUControl = ALU_SRL; A = 32'h10101010; B = 32'h01010101; exp_result = 32'h08080808; exp_zero = 1'b0;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "AND "; ALUControl = ALU_AND; A = 32'h10101010; B = 32'h01010101; exp_result = 32'h00000000; exp_zero = 1'b1;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "OR  "; ALUControl = ALU_OR; A = 32'h10101010; B = 32'h01010101; exp_result = 32'h11111111; exp_zero = 1'b0;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "XOR "; ALUControl = ALU_XOR; A = 32'h10101010; B = 32'h01010101; exp_result = 32'h11111111; exp_zero = 1'b0;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "BEQ "; ALUControl = ALU_SUB; A = 32'h10101010; B = 32'h01010101; exp_result = 32'h0F0F0F0F; exp_zero = 1'b0;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "BEQ "; ALUControl = ALU_SUB; A = 32'h10101010; B = 32'h10101010; exp_result = 32'h00000000; exp_zero = 1'b1;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
 
         // ADD: carries, carry out and overflow wrap-around
-        check("ADD ", ALU_ADD, 32'h00000000, 32'h00000000, 32'h00000000, 1'b1);
-        check("ADD ", ALU_ADD, 32'hFFFFFFFF, 32'h00000001, 32'h00000000, 1'b1);
-        check("ADD ", ALU_ADD, 32'h7FFFFFFF, 32'h00000001, 32'h80000000, 1'b0);
-        check("ADD ", ALU_ADD, 32'h12345678, 32'h9ABCDEF0, 32'hACF13568, 1'b0);
+        op_name = "ADD "; ALUControl = ALU_ADD; A = 32'h00000000; B = 32'h00000000; exp_result = 32'h00000000; exp_zero = 1'b1;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "ADD "; ALUControl = ALU_ADD; A = 32'hFFFFFFFF; B = 32'h00000001; exp_result = 32'h00000000; exp_zero = 1'b1;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "ADD "; ALUControl = ALU_ADD; A = 32'h7FFFFFFF; B = 32'h00000001; exp_result = 32'h80000000; exp_zero = 1'b0;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "ADD "; ALUControl = ALU_ADD; A = 32'h12345678; B = 32'h9ABCDEF0; exp_result = 32'hACF13568; exp_zero = 1'b0;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
 
         // SUB
-        check("SUB ", ALU_SUB, 32'h00000005, 32'h00000003, 32'h00000002, 1'b0);
-        check("SUB ", ALU_SUB, 32'h00000003, 32'h00000005, 32'hFFFFFFFE, 1'b0);
-        check("SUB ", ALU_SUB, 32'h00000000, 32'h00000001, 32'hFFFFFFFF, 1'b0);
-        check("SUB ", ALU_SUB, 32'h80000000, 32'h00000001, 32'h7FFFFFFF, 1'b0);
-        check("SUB ", ALU_SUB, 32'h12345678, 32'h12345678, 32'h00000000, 1'b1);
+        op_name = "SUB "; ALUControl = ALU_SUB; A = 32'h00000005; B = 32'h00000003; exp_result = 32'h00000002; exp_zero = 1'b0;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "SUB "; ALUControl = ALU_SUB; A = 32'h00000003; B = 32'h00000005; exp_result = 32'hFFFFFFFE; exp_zero = 1'b0;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "SUB "; ALUControl = ALU_SUB; A = 32'h00000000; B = 32'h00000001; exp_result = 32'hFFFFFFFF; exp_zero = 1'b0;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "SUB "; ALUControl = ALU_SUB; A = 32'h80000000; B = 32'h00000001; exp_result = 32'h7FFFFFFF; exp_zero = 1'b0;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "SUB "; ALUControl = ALU_SUB; A = 32'h12345678; B = 32'h12345678; exp_result = 32'h00000000; exp_zero = 1'b1;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
 
         // logic
-        check("AND ", ALU_AND, 32'hFFFFFFFF, 32'h12345678, 32'h12345678, 1'b0);
-        check("AND ", ALU_AND, 32'hDEADBEEF, 32'hFFFF0000, 32'hDEAD0000, 1'b0);
-        check("AND ", ALU_AND, 32'hF0F0F0F0, 32'h0F0F0F0F, 32'h00000000, 1'b1);
-        check("OR  ", ALU_OR , 32'h12340000, 32'h00005678, 32'h12345678, 1'b0);
-        check("OR  ", ALU_OR , 32'hF0F0F0F0, 32'h0F0F0F0F, 32'hFFFFFFFF, 1'b0);
-        check("OR  ", ALU_OR , 32'h00000000, 32'h00000000, 32'h00000000, 1'b1);
-        check("XOR ", ALU_XOR, 32'hAAAAAAAA, 32'h55555555, 32'hFFFFFFFF, 1'b0);
-        check("XOR ", ALU_XOR, 32'hDEADBEEF, 32'hFFFFFFFF, 32'h21524110, 1'b0);
-        check("XOR ", ALU_XOR, 32'hCAFEF00D, 32'hCAFEF00D, 32'h00000000, 1'b1);
+        op_name = "AND "; ALUControl = ALU_AND; A = 32'hFFFFFFFF; B = 32'h12345678; exp_result = 32'h12345678; exp_zero = 1'b0;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "AND "; ALUControl = ALU_AND; A = 32'hDEADBEEF; B = 32'hFFFF0000; exp_result = 32'hDEAD0000; exp_zero = 1'b0;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "AND "; ALUControl = ALU_AND; A = 32'hF0F0F0F0; B = 32'h0F0F0F0F; exp_result = 32'h00000000; exp_zero = 1'b1;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "OR  "; ALUControl = ALU_OR; A = 32'h12340000; B = 32'h00005678; exp_result = 32'h12345678; exp_zero = 1'b0;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "OR  "; ALUControl = ALU_OR; A = 32'hF0F0F0F0; B = 32'h0F0F0F0F; exp_result = 32'hFFFFFFFF; exp_zero = 1'b0;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "OR  "; ALUControl = ALU_OR; A = 32'h00000000; B = 32'h00000000; exp_result = 32'h00000000; exp_zero = 1'b1;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "XOR "; ALUControl = ALU_XOR; A = 32'hAAAAAAAA; B = 32'h55555555; exp_result = 32'hFFFFFFFF; exp_zero = 1'b0;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "XOR "; ALUControl = ALU_XOR; A = 32'hDEADBEEF; B = 32'hFFFFFFFF; exp_result = 32'h21524110; exp_zero = 1'b0;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "XOR "; ALUControl = ALU_XOR; A = 32'hCAFEF00D; B = 32'hCAFEF00D; exp_result = 32'h00000000; exp_zero = 1'b1;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
 
         // shifts: only B[4:0] is used as the shift amount
-        check("SLL ", ALU_SLL, 32'h00000001, 32'h00000000, 32'h00000001, 1'b0);
-        check("SLL ", ALU_SLL, 32'h00000001, 32'h0000001F, 32'h80000000, 1'b0);
-        check("SLL ", ALU_SLL, 32'h00000001, 32'h00000021, 32'h00000002, 1'b0);
-        check("SLL ", ALU_SLL, 32'hFFFFFFFF, 32'h00000004, 32'hFFFFFFF0, 1'b0);
-        check("SLL ", ALU_SLL, 32'h80000000, 32'h00000001, 32'h00000000, 1'b1);
-        check("SRL ", ALU_SRL, 32'h80000000, 32'h0000001F, 32'h00000001, 1'b0);
-        check("SRL ", ALU_SRL, 32'hFFFFFFFF, 32'h00000004, 32'h0FFFFFFF, 1'b0);
-        check("SRL ", ALU_SRL, 32'h80000000, 32'hFFFFFFE4, 32'h08000000, 1'b0);
-        check("SRL ", ALU_SRL, 32'h12345678, 32'h00000000, 32'h12345678, 1'b0);
-        check("SRL ", ALU_SRL, 32'h00000001, 32'h00000001, 32'h00000000, 1'b1);
+        op_name = "SLL "; ALUControl = ALU_SLL; A = 32'h00000001; B = 32'h00000000; exp_result = 32'h00000001; exp_zero = 1'b0;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "SLL "; ALUControl = ALU_SLL; A = 32'h00000001; B = 32'h0000001F; exp_result = 32'h80000000; exp_zero = 1'b0;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "SLL "; ALUControl = ALU_SLL; A = 32'h00000001; B = 32'h00000021; exp_result = 32'h00000002; exp_zero = 1'b0;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "SLL "; ALUControl = ALU_SLL; A = 32'hFFFFFFFF; B = 32'h00000004; exp_result = 32'hFFFFFFF0; exp_zero = 1'b0;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "SLL "; ALUControl = ALU_SLL; A = 32'h80000000; B = 32'h00000001; exp_result = 32'h00000000; exp_zero = 1'b1;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "SRL "; ALUControl = ALU_SRL; A = 32'h80000000; B = 32'h0000001F; exp_result = 32'h00000001; exp_zero = 1'b0;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "SRL "; ALUControl = ALU_SRL; A = 32'hFFFFFFFF; B = 32'h00000004; exp_result = 32'h0FFFFFFF; exp_zero = 1'b0;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "SRL "; ALUControl = ALU_SRL; A = 32'h80000000; B = 32'hFFFFFFE4; exp_result = 32'h08000000; exp_zero = 1'b0;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "SRL "; ALUControl = ALU_SRL; A = 32'h12345678; B = 32'h00000000; exp_result = 32'h12345678; exp_zero = 1'b0;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "SRL "; ALUControl = ALU_SRL; A = 32'h00000001; B = 32'h00000001; exp_result = 32'h00000000; exp_zero = 1'b1;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
 
         // BEQ = SUB, branch taken when Zero = 1
-        check("BEQ ", ALU_SUB, 32'hFFFFFFFF, 32'hFFFFFFFF, 32'h00000000, 1'b1);
-        check("BEQ ", ALU_SUB, 32'h00000000, 32'h80000000, 32'h80000000, 1'b0);
-        check("BEQ ", ALU_SUB, 32'h00000001, 32'h00000002, 32'hFFFFFFFF, 1'b0);
+        op_name = "BEQ "; ALUControl = ALU_SUB; A = 32'hFFFFFFFF; B = 32'hFFFFFFFF; exp_result = 32'h00000000; exp_zero = 1'b1;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "BEQ "; ALUControl = ALU_SUB; A = 32'h00000000; B = 32'h80000000; exp_result = 32'h80000000; exp_zero = 1'b0;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "BEQ "; ALUControl = ALU_SUB; A = 32'h00000001; B = 32'h00000002; exp_result = 32'hFFFFFFFF; exp_zero = 1'b0;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
 
         // unused codes give 0
-        check("----", 4'b0111, 32'h10101010, 32'h01010101, 32'h00000000, 1'b1);
-        check("----", 4'b1000, 32'h10101010, 32'h01010101, 32'h00000000, 1'b1);
-        check("----", 4'b1111, 32'h10101010, 32'h01010101, 32'h00000000, 1'b1);
+        op_name = "----"; ALUControl = 4'b0111; A = 32'h10101010; B = 32'h01010101; exp_result = 32'h00000000; exp_zero = 1'b1;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "----"; ALUControl = 4'b1000; A = 32'h10101010; B = 32'h01010101; exp_result = 32'h00000000; exp_zero = 1'b1;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
+        op_name = "----"; ALUControl = 4'b1111; A = 32'h10101010; B = 32'h01010101; exp_result = 32'h00000000; exp_zero = 1'b1;
+        #10;
+        if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+        else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
 
-        // random operands, 4 per operation, checked against the model
+        // random operands, 4 per operation
         for (i = 0; i < 28; i = i + 1) begin
             case (i % 7)
-                0 : rand_ctrl = ALU_ADD;
-                1 : rand_ctrl = ALU_SUB;
-                2 : rand_ctrl = ALU_SLL;
-                3 : rand_ctrl = ALU_SRL;
-                4 : rand_ctrl = ALU_AND;
-                5 : rand_ctrl = ALU_OR;
-                default : rand_ctrl = ALU_XOR;
+                0 : begin ALUControl = ALU_ADD; op_name = "ADD "; end
+                1 : begin ALUControl = ALU_SUB; op_name = "SUB "; end
+                2 : begin ALUControl = ALU_SLL; op_name = "SLL "; end
+                3 : begin ALUControl = ALU_SRL; op_name = "SRL "; end
+                4 : begin ALUControl = ALU_AND; op_name = "AND "; end
+                5 : begin ALUControl = ALU_OR; op_name = "OR  "; end
+                default : begin ALUControl = ALU_XOR; op_name = "XOR "; end
             endcase
-            rand_a = $random(seed);
-            rand_b = $random(seed);
-            rand_expected = model(rand_ctrl, rand_a, rand_b);
-            check(op_label(rand_ctrl), rand_ctrl, rand_a, rand_b,
-                  rand_expected, (rand_expected == 32'd0));
+            A = $random(seed);
+            B = $random(seed);
+            // expected value from plain operators, not the ALU's A + ~B + 1
+            case (ALUControl)
+                ALU_AND : exp_result = A & B;
+                ALU_OR : exp_result = A | B;
+                ALU_ADD : exp_result = A + B;
+                ALU_XOR : exp_result = A ^ B;
+                ALU_SLL : exp_result = A << B[4:0];
+                ALU_SRL : exp_result = A >> B[4:0];
+                ALU_SUB : exp_result = A - B;
+                default : exp_result = 32'd0;
+            endcase
+            exp_zero = (exp_result == 32'd0);
+            #10;
+            if (ALUResult === exp_result && Zero === exp_zero) begin pass_count = pass_count + 1; $display("PASS  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b", op_name, ALUControl, A, B, ALUResult, Zero); end
+            else begin fail_count = fail_count + 1; $display("FAIL  %s ctrl=%b  A=%h  B=%h  ->  ALUResult=%h  Zero=%b   (expected %h  Zero=%b)", op_name, ALUControl, A, B, ALUResult, Zero, exp_result, exp_zero); end
         end
 
         $display("--------------------------------------------------------------------------");
