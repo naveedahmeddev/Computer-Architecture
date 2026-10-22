@@ -18,7 +18,7 @@ module RegisterFile (
 );
 
     reg [31:0] regs [0:31];
-    integer i;
+    reg [5:0] i;
 
     always @(posedge clk) begin
         if (rst) begin

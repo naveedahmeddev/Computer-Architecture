@@ -16,7 +16,7 @@ module RegisterFile_tb;
     reg [31:0] WriteData = 32'd0;
     wire [31:0] ReadData1, ReadData2;
 
-    integer errors = 0;
+    reg [31:0] errors = 0;
 
     RegisterFile dut (
         .clk(clk), .rst(rst), .WriteEnable(WriteEnable),
@@ -26,72 +26,62 @@ module RegisterFile_tb;
 
     always #5 clk = ~clk;
 
-    task check;
-        input [255:0] name;
-        input [31:0] got;
-        input [31:0] expected;
-        begin
-            if (got === expected)
-                $display("PASS : %0s = 0x%08h", name, got);
-            else begin
-                $display("FAIL : %0s = 0x%08h, expected 0x%08h", name, got, expected);
-                errors = errors + 1;
-            end
-        end
-    endtask
-
-    task write_reg;
-        input [4:0] addr;
-        input [31:0] data;
-        begin
-            rd = addr; WriteData = data; WriteEnable = 1'b1;
-            @(posedge clk); #1;
-            WriteEnable = 1'b0;
-        end
-    endtask
-
     initial begin
         $display("--- RegisterFile tests ---");
 
         // reset clears every register
         rst = 1'b1; @(posedge clk); #1; rst = 1'b0;
         rs1 = 5'd5; rs2 = 5'd6; #1;
-        check("after reset x5", ReadData1, 32'd0);
-        check("after reset x6", ReadData2, 32'd0);
+        if (ReadData1 === 32'd0) $display("PASS : after reset x5 = 0x%08h", ReadData1);
+        else begin $display("FAIL : after reset x5 = 0x%08h, expected 0x%08h", ReadData1, 32'd0); errors = errors + 1; end
+        if (ReadData2 === 32'd0) $display("PASS : after reset x6 = 0x%08h", ReadData2);
+        else begin $display("FAIL : after reset x6 = 0x%08h, expected 0x%08h", ReadData2, 32'd0); errors = errors + 1; end
 
         // write a value and read it back
-        write_reg(5'd5, 32'hDEADBEEF);
+        rd = 5'd5; WriteData = 32'hDEADBEEF; WriteEnable = 1'b1;
+        @(posedge clk); #1; WriteEnable = 1'b0;
         rs1 = 5'd5; #1;
-        check("x5 after write", ReadData1, 32'hDEADBEEF);
+        if (ReadData1 === 32'hDEADBEEF) $display("PASS : x5 after write = 0x%08h", ReadData1);
+        else begin $display("FAIL : x5 after write = 0x%08h, expected 0x%08h", ReadData1, 32'hDEADBEEF); errors = errors + 1; end
 
         // writes to x0 are ignored
-        write_reg(5'd0, 32'hFFFFFFFF);
+        rd = 5'd0; WriteData = 32'hFFFFFFFF; WriteEnable = 1'b1;
+        @(posedge clk); #1; WriteEnable = 1'b0;
         rs1 = 5'd0; #1;
-        check("x0 stays zero", ReadData1, 32'd0);
+        if (ReadData1 === 32'd0) $display("PASS : x0 stays zero = 0x%08h", ReadData1);
+        else begin $display("FAIL : x0 stays zero = 0x%08h, expected 0x%08h", ReadData1, 32'd0); errors = errors + 1; end
 
         // both read ports work at the same time
-        write_reg(5'd6, 32'h12345678);
+        rd = 5'd6; WriteData = 32'h12345678; WriteEnable = 1'b1;
+        @(posedge clk); #1; WriteEnable = 1'b0;
         rs1 = 5'd5; rs2 = 5'd6; #1;
-        check("port 1 reads x5", ReadData1, 32'hDEADBEEF);
-        check("port 2 reads x6", ReadData2, 32'h12345678);
+        if (ReadData1 === 32'hDEADBEEF) $display("PASS : port 1 reads x5 = 0x%08h", ReadData1);
+        else begin $display("FAIL : port 1 reads x5 = 0x%08h, expected 0x%08h", ReadData1, 32'hDEADBEEF); errors = errors + 1; end
+        if (ReadData2 === 32'h12345678) $display("PASS : port 2 reads x6 = 0x%08h", ReadData2);
+        else begin $display("FAIL : port 2 reads x6 = 0x%08h, expected 0x%08h", ReadData2, 32'h12345678); errors = errors + 1; end
 
         rs1 = 5'd6; rs2 = 5'd6; #1;
-        check("both ports read x6", ReadData1, 32'h12345678);
+        if (ReadData1 === 32'h12345678) $display("PASS : both ports read x6 = 0x%08h", ReadData1);
+        else begin $display("FAIL : both ports read x6 = 0x%08h, expected 0x%08h", ReadData1, 32'h12345678); errors = errors + 1; end
 
         // overwrite replaces the old value
-        write_reg(5'd5, 32'hA5A5A5A5);
+        rd = 5'd5; WriteData = 32'hA5A5A5A5; WriteEnable = 1'b1;
+        @(posedge clk); #1; WriteEnable = 1'b0;
         rs1 = 5'd5; #1;
-        check("x5 overwritten", ReadData1, 32'hA5A5A5A5);
+        if (ReadData1 === 32'hA5A5A5A5) $display("PASS : x5 overwritten = 0x%08h", ReadData1);
+        else begin $display("FAIL : x5 overwritten = 0x%08h, expected 0x%08h", ReadData1, 32'hA5A5A5A5); errors = errors + 1; end
 
         // nothing is written while WriteEnable is low
         rd = 5'd5; WriteData = 32'h00000000; WriteEnable = 1'b0;
         @(posedge clk); #1;
         rs1 = 5'd5; #1;
-        check("x5 held with WriteEnable low", ReadData1, 32'hA5A5A5A5);
+        if (ReadData1 === 32'hA5A5A5A5) $display("PASS : x5 held with WriteEnable low = 0x%08h", ReadData1);
+        else begin $display("FAIL : x5 held with WriteEnable low = 0x%08h, expected 0x%08h", ReadData1, 32'hA5A5A5A5); errors = errors + 1; end
 
         rst = 1'b1; @(posedge clk); #1; rst = 1'b0;
         rs1 = 5'd5; #1;
-        check("x5 cleared by second reset", ReadData1, 32'd0);
+        if (ReadData1 === 32'd0) $display("PASS : x5 cleared by second reset = 0x%08h", ReadData1);
+        else begin $display("FAIL : x5 cleared by second reset = 0x%08h, expected 0x%08h", ReadData1, 32'd0); errors = errors + 1; end
 
         if (errors == 0) $display("--- All RegisterFile tests PASSED ---");
         else $display("--- %0d RegisterFile test(s) FAILED ---", errors);
